@@ -20,15 +20,31 @@ var path = require('path');
 // Include configuration file
 var T = new Twit(require('./config.js'));
 
-// Helper function for arrays, picks a random word
-Array.prototype.pick = function() {
-    let index = Math.floor(Math.random() * this.length);
-    return this[index];
+// Picks random item from array
+function randomFromArray(arr){
+    return arr[Math.floor(Math.random() * arr.length)];
 }
 
-// Helper function for picking a random item from an array
-function randomFromArray( images ){
-    return images[Math.floor( Math.random() * images.length )];
+function tweetWithImage(content, tweetText) {
+    T.post('media/upload', {media_data: content}, function (err, data, response) {
+        if (err) {
+            console.log('Error uploading: ', err);
+        } else {
+            console.log('Successful upload! Tweeting now - ');
+
+            // Now post the image with the status
+            T.post('statuses/update', {
+                status: tweetText,
+                media_ids: new Array(data.media_id_string)
+            }, function (err, data, response) {
+                if (err) {
+                    console.log('Error tweeting: ', err);
+                } else {
+                    console.log("Image and Status tweet successful!");
+                }
+            })
+        }
+    })
 }
 
 //Since tweet is the first thing that runs, images will be defined and available to all methods
@@ -50,26 +66,10 @@ function tweet() {
             const img = path.join(__dirname, '/images/' + randomFromArray(images)),
                 content = fs.readFileSync(img, {encoding: 'base64'});
             let tweetText = preMadeReplies.pick();
-            //Upload the image to twitter
-            T.post('media/upload', {media_data: content}, function (err, data, response) {
-                if (err) {
-                    console.log('Error uploading: ', err);
-                } else {
-                    console.log('Successful upload! Tweeting now - ');
 
-                    // Now post the image with the status
-                    T.post('statuses/update', {
-                        status: tweetText,
-                        media_ids: new Array(data.media_id_string)
-                    }, function (err, data, response) {
-                        if (err) {
-                            console.log('Error tweeting: ', err);
-                        } else {
-                            console.log("Image and Status tweet successful!");
-                        }
-                    })
-                }
-            })
+            tweetWithImage(content, tweetText);
+            //Upload the image to twitter
+
         }
     })
 }
@@ -81,30 +81,11 @@ function respondToMention(tweet) {
     //Select a random image from the array and store its path
     const img = path.join(__dirname, '/images/' + randomFromArray(images)),
         content = fs.readFileSync(img, {encoding: 'base64'});
-    let mentionId = tweet.user.id_str;
     let mentioner = '@' + tweet.user.screen_name;
 
     reply = mentioner + " " + preMadeReplies.pick();
 
-    T.post('media/upload', {media_data: content}, function (err, data, response) {
-        if (err) {
-            console.log('Error uploading: ', err);
-        } else {
-            console.log('Successful upload! Tweeting now - ');
-
-            // Now post the image with the status
-            T.post('statuses/update', {
-                status: reply,
-                media_ids: new Array(data.media_id_string)
-            }, function (err, data, response) {
-                if (err) {
-                    console.log('Error tweeting: ', err);
-                } else {
-                    console.log("Mention tweet successful!");
-                }
-            })
-        }
-    })
+    tweetWithImage(content, reply);
 }
 
 function tweetWhenFollowed(follow) {
@@ -114,29 +95,10 @@ function tweetWhenFollowed(follow) {
         content = fs.readFileSync(img, {encoding: 'base64'});
 
     // Who followed the bot, what their ID and screen name are
-    let follower = follow.id_str;
     let name = '@' + follow.user.screen_name;
 
     let reply = name + " " + preMadeReplies.pick();
-    T.post('media/upload', {media_data: content}, function (err, data, response) {
-        if (err) {
-            console.log('Error uploading: ', err);
-        } else {
-            console.log('Successful upload! Tweeting now - ');
-
-            // Now post the image with the status
-            T.post('statuses/update', {
-                status: reply,
-                media_ids: new Array(data.media_id_string)
-            }, function (err, data, response) {
-                if (err) {
-                    console.log('Error tweeting: ', err);
-                } else {
-                    console.log("Follow tweet successful!");
-                }
-            })
-        }
-    })
+    tweetWithImage(content, reply);
 }
 
 
