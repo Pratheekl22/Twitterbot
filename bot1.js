@@ -130,19 +130,32 @@ function tweet() {
     })
 }
 
-var animals = []
-//TODO stop @ when replied to
-// Check if the user specified what animal they want to see
+//TODO Check if the user specified what animal they want to see
+/**
+ * Responds to being mentioned based on cases
+ * If media is provided and the user states it is an animal, then
+ * the bot will retweet it, if media is provided and the user does not
+ * state an animal we recognize, we will not interact with the tweet
+ * If the user does not provide media, we will tweet @ them with an
+ * animal picture
+ * @param tweet the tweet that mentioned us
+ */
 function respondToMention(tweet) {
     console.log("Mention event");
     let mentioner = '@' + tweet.user.screen_name;
     let reply = "";
+
+    // Do not interact with replies (for spam purposes)
+    if (tweet.in_reply_to_status_id != null) {
+        return;
+    }
 
     //if the bot detects an image is provided, it will consider retweeting it
     if (tweet.extended_entities !== undefined && tweet.retweet_count === 0) {
         console.log("User media detected");
         let x = tweet.text.toLowerCase();
 
+        // if a tweet has already been retweeted, do not retweet it again
         if(x.includes("rt")) {
             return;
         }
@@ -154,6 +167,7 @@ function respondToMention(tweet) {
         });
 
         file.on('line', (line) => {
+            // If we do recognize the animal, go ahead and retweet the image
             if(line !== '' && x.includes(line.toLowerCase())) {
                 console.log("Animal detected");
                 T.post('statuses/retweet/' + tweet.id_str, {}, function (err, data, response) {
@@ -165,7 +179,6 @@ function respondToMention(tweet) {
                 })
             }
         });
-        // If x is undefined, we do not know if the tweet text contains an animal
     } else {
         reply = mentioner + " " + preMadeReplies.pick();
         const img = path.join(__dirname, '/images/' + randomFromArray(images)),
