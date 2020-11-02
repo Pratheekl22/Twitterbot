@@ -103,24 +103,6 @@ function tweetWithImage(content, tweetText) {
     })
 }
 
-/**
- * Verifies the item provided is an animal
- * @param item the item to check
- */
-function isAnimal(item) {
-    var rd = readline.createInterface({
-        input: fs.createReadStream('C:\\Users\\Pratheek Lakkireddy\\IdeaProjects\\Twitterbot\\animals'),
-        output: process.stdout,
-    });
-
-    rd.on('line', function(line) {
-        if (item.includes(line.toLowerCase())) {
-            return line;
-        }
-    })
-}
-
-//Since tweet is the first thing that runs, images will be defined and available to all methods
 var images = [];
 // Posts images
 //ToDo Perhaps provide the name of the animal
@@ -148,38 +130,42 @@ function tweet() {
     })
 }
 
-
+var animals = []
 //TODO stop @ when replied to
 // Check if the user specified what animal they want to see
 function respondToMention(tweet) {
     console.log("Mention event");
-    //Select a random image from the array and store its path
-
     let mentioner = '@' + tweet.user.screen_name;
     let reply = "";
-    //if the bot detects an image is provided, it will consider retweeting it
-    if (tweet.profile_image_url !== '') {
-        console.log("User media detected");
-        //Verify the image provided is an animal we recognize
-        let x = isAnimal(tweet.text.toLowerCase());
-        console.log(x);
-        // If x is undefined, we do not know if the tweet text contains an animal
-        if (typeof x !== undefined) {
-            console.log("Animal detected");
-            reply = mentioner + " " + preMadeAnimalReplies.pick();
-            let params = {
-                id: tweet.id_str,
-                status: reply
-            }
 
-            T.post('statuses/retweet/:id', params, function (err, data, response) {
-                if (err) {
-                    console.log('Error retweeting: ', err);
-                } else {
-                    console.log("Status retweet successful!");
-                }
-            })
+    //if the bot detects an image is provided, it will consider retweeting it
+    if (tweet.extended_entities !== undefined && tweet.retweet_count === 0) {
+        console.log("User media detected");
+        let x = tweet.text.toLowerCase();
+
+        if(x.includes("rt")) {
+            return;
         }
+        //Verify the image provided is an animal we recognize
+        const file = readline.createInterface({
+            input: fs.createReadStream('C:\\Users\\Pratheek Lakkireddy\\IdeaProjects\\Twitterbot\\animals'),
+            output: process.stdout,
+            terminal: false
+        });
+
+        file.on('line', (line) => {
+            if(line !== '' && x.includes(line.toLowerCase())) {
+                console.log("Animal detected");
+                T.post('statuses/retweet/' + tweet.id_str, {}, function (err, data, response) {
+                    if (err) {
+                        console.log('Error retweeting: ', err);
+                    } else {
+                        console.log("Status retweet successful!");
+                    }
+                })
+            }
+        });
+        // If x is undefined, we do not know if the tweet text contains an animal
     } else {
         reply = mentioner + " " + preMadeReplies.pick();
         const img = path.join(__dirname, '/images/' + randomFromArray(images)),
