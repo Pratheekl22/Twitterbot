@@ -54,6 +54,12 @@ function randomAnimalFromArray(arr, animal){
         }
     })
 
+    console.log(specAnimal);
+    if (specAnimal.length === 0) {
+        // We do not have the requested animal
+        console.log("We do not have the requested animal");
+        return randomFromArray(arr);
+    }
     // This will be the address of the animal in the images file
     return randomFromArray(specAnimal);
 }
@@ -66,7 +72,7 @@ function randomAnimalFromArray(arr, animal){
 function removeInts(str) {
     let rtn = "";
     // Due to the naming convention of the file, going backwards is efficient
-    for (let i = str.length - 1; i <= 0; i--) {
+    for (let i = str.length - 1; i >= 0; i--) {
         if(isNaN(str.charAt(i).parseInt)) {
             rtn += str.charAt(i);
         }
@@ -144,31 +150,33 @@ function respondToMention(tweet) {
     console.log("Mention event");
     let mentioner = '@' + tweet.user.screen_name;
     let reply = "";
+    let x = tweet.text.toLowerCase();
 
     // Do not interact with replies (for spam purposes)
     if (tweet.in_reply_to_status_id != null) {
         return;
     }
 
+    const file = readline.createInterface({
+        input: fs.createReadStream('C:\\Users\\Pratheek Lakkireddy\\IdeaProjects\\Twitterbot\\animals'),
+        output: process.stdout,
+        terminal: false
+    });
+
     //if the bot detects an image is provided, it will consider retweeting it
     if (tweet.extended_entities !== undefined && tweet.retweet_count === 0) {
         console.log("User media detected");
-        let x = tweet.text.toLowerCase();
+
 
         // if a tweet has already been retweeted, do not retweet it again
-        if(x.includes("rt")) {
+        if (x.includes("rt")) {
             return;
         }
         //Verify the image provided is an animal we recognize
-        const file = readline.createInterface({
-            input: fs.createReadStream('C:\\Users\\Pratheek Lakkireddy\\IdeaProjects\\Twitterbot\\animals'),
-            output: process.stdout,
-            terminal: false
-        });
 
         file.on('line', (line) => {
             // If we do recognize the animal, go ahead and retweet the image
-            if(line !== '' && x.includes(line.toLowerCase())) {
+            if (line !== '' && x.includes(line.toLowerCase())) {
                 console.log("Animal detected");
                 T.post('statuses/retweet/' + tweet.id_str, {}, function (err, data, response) {
                     if (err) {
@@ -180,11 +188,31 @@ function respondToMention(tweet) {
             }
         });
     } else {
-        reply = mentioner + " " + preMadeReplies.pick();
-        const img = path.join(__dirname, '/images/' + randomFromArray(images)),
-            content = fs.readFileSync(img, {encoding: 'base64'});
+        let tweeted = false;
 
-        tweetWithImage(content, reply);
+        file.on('line', (line) => {
+            // If we do recognize the animal, go ahead and retweet the image
+            if (line !== '' && x.includes(line.toLowerCase())) {
+                console.log("User specified animal - searching in images" );
+                reply = mentioner + " " + preMadeAnimalReplies.pick();
+                const img = path.join(__dirname, '/images/' + randomAnimalFromArray(images, line)),
+                content = fs.readFileSync(img, {encoding: 'base64'});
+                // Since we are going to keep reading from the file, we only want to tweet once
+                if (!tweeted) {
+                    tweetWithImage(content, reply);
+                    tweeted = true;
+                }
+            }
+
+            if (line === '' && !tweeted) {
+                // If an animal was not specified, we will just give them a random one
+                console.log("Could not find animal - providing random one");
+                reply = mentioner + " " + preMadeAnimalReplies.pick();
+                const img = path.join(__dirname, '/images/' + randomFromArray(images)),
+                    content = fs.readFileSync(img, {encoding: 'base64'});
+                tweetWithImage(content, reply);
+            }
+        })
     }
 }
 
