@@ -71,14 +71,22 @@ function randomAnimalFromArray(arr, animal){
  */
 function removeInts(str) {
     let rtn = "";
-    // Due to the naming convention of the file, going backwards is efficient
-    for (let i = str.length - 1; i >= 0; i--) {
-        if(isNaN(str.charAt(i).parseInt)) {
+    // Due to the naming convention of the file, cutting after first int is all we should do
+    for (let i = 0; i < str.length; i++) {
+        if (isNaN(str.charAt(i).parseInt)) {
             rtn += str.charAt(i);
+        } else {
+            console.log(rtn);
+            return rtn;
         }
-
-        return rtn;
     }
+
+    //Cut the .jpg from the string
+    if (rtn.indexOf('.') !== -1) {
+        rtn = rtn.slice(0, rtn.indexOf('.'));
+    }
+
+    return rtn;
 }
 
 /**
@@ -110,8 +118,10 @@ function tweetWithImage(content, tweetText) {
 }
 
 var images = [];
-// Posts images
-//ToDo Perhaps provide the name of the animal
+/**
+ * Tweets a random image from the images folder every hour
+ * Occasionally provides the name of the animal, occasionally does not
+ */
 function tweet() {
     console.log("Tweet event");
     // Fill images[] with image paths from the images file
@@ -128,15 +138,20 @@ function tweet() {
             let animal = randomFromArray(images);
             const img = path.join(__dirname, '/images/' + animal),
                 content = fs.readFileSync(img, {encoding: 'base64'});
-            let tweetText = preMadeReplies.pick();
 
-            //tweetWithImage(content, tweetText);
-            //Upload the image to twitter
+            //Half the time we will provide the name of the animal, half the time we will not
+             if (Math.random() <= .5) {
+                 let tweetText = preMadeReplies.pick();
+                 //Upload the image to twitter
+                 tweetWithImage(content, tweetText);
+             } else {
+                let tweetText = preMadeAnimalReplies.pick() + removeInts(animal);
+                tweetWithImage(content, tweetText);
+            }
         }
     })
 }
 
-//TODO Check if the user specified what animal they want to see
 /**
  * Responds to being mentioned based on cases
  * If media is provided and the user states it is an animal, then
@@ -172,8 +187,8 @@ function respondToMention(tweet) {
         if (x.includes("rt")) {
             return;
         }
-        //Verify the image provided is an animal we recognize
 
+        //Verify the image provided is an animal we recognize
         file.on('line', (line) => {
             // If we do recognize the animal, go ahead and retweet the image
             if (line !== '' && x.includes(line.toLowerCase())) {
@@ -190,11 +205,12 @@ function respondToMention(tweet) {
     } else {
         let tweeted = false;
 
+        // Same as above, verify if we recognize the animal provided
         file.on('line', (line) => {
-            // If we do recognize the animal, go ahead and retweet the image
+            // If we do recognize the animal, look for that animal in the iamges array
             if (line !== '' && x.includes(line.toLowerCase())) {
                 console.log("User specified animal - searching in images" );
-                reply = mentioner + " " + preMadeAnimalReplies.pick();
+                reply = mentioner + " " + preMadeAnimalReplies.pick() + line;
                 const img = path.join(__dirname, '/images/' + randomAnimalFromArray(images, line)),
                 content = fs.readFileSync(img, {encoding: 'base64'});
                 // Since we are going to keep reading from the file, we only want to tweet once
@@ -207,7 +223,7 @@ function respondToMention(tweet) {
             if (line === '' && !tweeted) {
                 // If an animal was not specified, we will just give them a random one
                 console.log("Could not find animal - providing random one");
-                reply = mentioner + " " + preMadeAnimalReplies.pick();
+                reply = mentioner + " " + preMadeReplies.pick();
                 const img = path.join(__dirname, '/images/' + randomFromArray(images)),
                     content = fs.readFileSync(img, {encoding: 'base64'});
                 tweetWithImage(content, reply);
@@ -241,27 +257,27 @@ function getSyn(word) {
         }
 
         var json = JSON.parse(data);
-        if (debug) {
-            console.log(json[0]);
-        }
     })
 }
 
-//ToDo Maybe add an animal of the day method that posts a picture of the most
-// talked about animal of that day, if we dont have one just say what it is
+/**
+ * Defines two arrays that add personality to the bot by changing its replies
+ * Runs tweet, and watches for mention and follow events
+ */
 function runBot() {
     console.log(" "); // just for legible logs
 
         preMadeReplies = [
-           "Hello" + " I hope you " + "enjoy" + " this animal picture!",
-            "How's it going! You seem like you could use more animal " + "picture" + " in your life",
-            "Who " + "loves" + " animals? I hope you do!"
+           "Hello! " + " I hope you " + "enjoy" + " this animal picture!",
+            "How's it going! You seem like you could use more animal" + " pictures" + " in your life",
+            "Who " + "loves" + " animals? I hope you do!",
+            "Animals are awesome, aren't they?"
         ];
 
     preMadeAnimalReplies = [
-        "Hello" + " I hope you " + "enjoy" + " this animal picture!",
-        "How's it going! You seem like you could use more animal " + "picture" + " in your life",
-        "Who " + "loves" + " animals? I hope you do!"
+        "Hello, " + " I hope you " + "enjoy" + " this picture of the majestic ",
+        "I absolutely adore animals, how do you feel about the ",
+        "Do you like animals? How do you feel about the great "
     ];
 
     tweet();
