@@ -1,17 +1,10 @@
 // Wordnik key and inflection things
 var WordnikAPIKey = '0nxyph37juaxtz2c5haq6i8wam1dl5wmykp0dbdxdwts25z6l';
 var request = require('request');
-var inflection = require('inflection');
-var pluralize = inflection.pluralize;
-var capitalize = inflection.capitalize;
-var singularize = inflection.singularize;
 
 // Global premade replies for the bot
 var preMadeReplies;
 var preMadeAnimalReplies;
-
-// Blacklist
-var wordfilter = require('wordfilter');
 
 // Twitter Essentials
 var Twit = require('twit');
@@ -70,20 +63,12 @@ function randomAnimalFromArray(arr, animal){
  * @returns {string} the string with no ints
  */
 function removeInts(str) {
-    let rtn = "";
-    // Due to the naming convention of the file, cutting after first int is all we should do
-    for (let i = 0; i < str.length; i++) {
-        if (isNaN(str.charAt(i).parseInt)) {
-            rtn += str.charAt(i);
-        } else {
-            console.log(rtn);
-            return rtn;
+    let rtn = str.slice(0, str.indexOf('.'));
+    for (let i = 0; i < rtn.length; i++) {
+        if (rtn.charAt(i) <= 0 || rtn.charAt(i) > 0) {
+            rtn = rtn.slice(0, i);
+            break;
         }
-    }
-
-    //Cut the .jpg from the string
-    if (rtn.indexOf('.') !== -1) {
-        rtn = rtn.slice(0, rtn.indexOf('.'));
     }
 
     return rtn;
