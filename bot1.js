@@ -137,6 +137,7 @@ function tweet() {
     })
 }
 
+//hi
 /**
  * Responds to being mentioned based on cases
  * If media is provided and the user states it is an animal, then
@@ -158,7 +159,7 @@ function respondToMention(tweet) {
     }
 
     const file = readline.createInterface({
-        input: fs.createReadStream('C:\\Users\\Pratheek Lakkireddy\\IdeaProjects\\Twitterbot\\animals'),
+        input: fs.createReadStream('animals'),
         output: process.stdout,
         terminal: false
     });
