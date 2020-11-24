@@ -159,7 +159,7 @@ function respondToMention(tweet) {
     }
 
     const file = readline.createInterface({
-        input: fs.createReadStream('animals'),
+        input: fs.createReadStream(__dirname + '/animals'),
         output: process.stdout,
         terminal: false
     });
@@ -197,10 +197,12 @@ function respondToMention(tweet) {
             if (line !== '' && x.includes(line.toLowerCase())) {
                 console.log("User specified animal - searching in images" );
                 reply = mentioner + " " + preMadeAnimalReplies.pick() + line;
-                const img = path.join(__dirname, '/images/' + randomAnimalFromArray(images, line)),
+                let animal = randomAnimalFromArray(images, line);
+                console.log(animal);
+                const img = path.join(__dirname, '/images/' + animal),
                 content = fs.readFileSync(img, {encoding: 'base64'});
                 // Since we are going to keep reading from the file, we only want to tweet once
-                if (!tweeted) {
+                if (!tweeted && line === (removeInts(animal))) {
                     tweetWithImage(content, reply);
                     tweeted = true;
                 }
